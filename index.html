@@ -1,35 +1,132 @@
-<!DOCTYPE html>
+        <!DOCTYPE html>
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>متتبع السوق اللحظي (عملات ذات تغييرات كبيرة)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    body { background: #111; color: #fff; font-family: Arial; text-align: center; padding: 20px; }
-    h1 { color: #f44336; }
-    .controls { margin-bottom: 20px; }
-    .controls select, .controls input, .controls button {
-      padding: 10px; margin: 5px; border-radius: 5px; border: none; background: #222; color: white;
+    body {
+      background-color: #0d1117;
+      color: #c9d1d9;
+      font-family: 'Cairo', sans-serif;
+      text-align: center;
+      padding: 20px;
     }
-    table { width: 95%; margin: auto; border-collapse: collapse; }
-    th, td { padding: 10px; border: 1px solid #333; }
-    th { background: #222; }
-    .up { color: #4caf50; }
-    .down { color: #f44336; }
-    .extreme { color: #ffeb3b; font-weight: bold; } /* للتغييرات الكبيرة (+100%) */
+    h1 {
+      color: #58a6ff;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .controls {
+      margin-bottom: 25px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+    .controls select,
+    .controls input,
+    .controls button {
+      padding: 12px 15px;
+      margin: 5px;
+      border-radius: 8px;
+      border: 1px solid #30363d;
+      background-color: #161b22;
+      color: #c9d1d9;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    .controls button:hover,
+    .controls select:hover,
+    .controls input:hover {
+      border-color: #58a6ff;
+    }
+    .controls button:active {
+      background-color: #232d3a;
+      transform: scale(0.98);
+    }
+    .controls button i {
+      margin-left: 5px;
+    }
+    table {
+      width: 100%;
+      max-width: 1000px;
+      margin: auto;
+      border-collapse: separate;
+      border-spacing: 0 10px;
+      table-layout: fixed;
+    }
+    th, td {
+      padding: 15px;
+      background-color: #161b22;
+      border: 1px solid #30363d;
+      text-align: right;
+    }
+    th:first-child, td:first-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+    th:last-child, td:last-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+    th {
+      background-color: #21262d;
+      font-weight: 700;
+      color: #8b949e;
+      border-color: #30363d;
+    }
+    tr:hover td {
+      background-color: #1b2129;
+    }
+    .up { color: #2ea043; font-weight: bold; }
+    .down { color: #f85149; font-weight: bold; }
+    .extreme { color: #d29922; font-weight: bold; }
+    .coin-name-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .coin-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+    }
+    .coin-symbol {
+        color: #8b949e;
+        font-size: 12px;
+    }
+    .status-text {
+        font-size: 14px;
+        color: #8b949e;
+        margin-top: 15px;
+    }
+    @media (max-width: 768px) {
+      table {
+        font-size: 14px;
+      }
+      th, td {
+        padding: 10px;
+      }
+      .coin-name-cell {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 5px;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>📊 متتبع السوق اللحظي (عملات ذات تغييرات كبيرة)</h1>
+  <h1><img src="https://i.ibb.co/L9g7Gg7/market-icon.png" alt="icon" width="40"> متتبع السوق اللحظي</h1>
   <div class="controls">
     <label for="threshold">عتبة التغيير (%):</label>
     <select id="threshold">
-      <option>1</option>
-      <option>5</option>
-      <option>10</option>
-      <option>20</option>
-      <option selected>50</option>
-      <option>100</option>
+      <option value="1">1%</option>
+      <option value="5">5%</option>
+      <option value="10">10%</option>
+      <option value="20">20%</option>
+      <option value="50" selected>50%</option>
+      <option value="100">100%</option>
     </select>
     <input type="text" id="search" placeholder="ابحث عن عملة...">
     <button onclick="setFilter('all')">الكل</button>
@@ -37,15 +134,16 @@
     <button onclick="setFilter('down')">هبوط فقط</button>
     <button onclick="fetchData()">🔄 تحديث الآن</button>
   </div>
-  <div id="tracker">جارٍ التحميل...</div>
+  <div id="tracker" class="status-text">جارٍ التحميل...</div>
+
   <script>
     let coins = [];
     let filter = 'all';
 
     async function fetchData() {
+      document.getElementById('tracker').innerHTML = 'جارٍ التحميل...';
       try {
         let allCoins = [];
-        // جلب بيانات من صفحتين (400 عملة)
         for (let page = 1; page <= 2; page++) {
           const res = await fetch(
             `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=200&page=${page}&price_change_percentage=24h`
@@ -64,31 +162,52 @@
       const search = document.getElementById('search').value.toLowerCase();
       const threshold = parseFloat(document.getElementById('threshold').value);
       let filtered = coins.filter(c => {
-        if (!c.price_change_percentage_24h) return false; // تخطي العملات بدون بيانات
-        return (
-          (filter === 'up' ? c.price_change_percentage_24h >= threshold :
-           filter === 'down' ? c.price_change_percentage_24h <= -threshold :
-           Math.abs(c.price_change_percentage_24h) >= threshold) &&
-          (c.name.toLowerCase().includes(search) || c.symbol.toLowerCase().includes(search))
+        if (!c.price_change_percentage_24h) return false;
+        const meetsThreshold = (
+          (filter === 'up' && c.price_change_percentage_24h >= threshold) ||
+          (filter === 'down' && c.price_change_percentage_24h <= -threshold) ||
+          (filter === 'all' && Math.abs(c.price_change_percentage_24h) >= threshold)
         );
+        const matchesSearch = c.name.toLowerCase().includes(search) || c.symbol.toLowerCase().includes(search);
+        return meetsThreshold && matchesSearch;
       });
 
-      let html = `<p>آخر تحديث: ${new Date().toLocaleString('ar')}</p>`;
-      html += `<table><tr><th>الاسم</th><th>الرمز</th><th>السعر $</th><th>التغيير (24س)</th><th>أعلى 24س</th><th>أدنى 24س</th></tr>`;
+      let html = `<p class="status-text">آخر تحديث: ${new Date().toLocaleString('ar')}</p>`;
+      if (filtered.length === 0) {
+        html += `<p class="status-text">لا توجد عملات مطابقة للمعايير المحددة.</p>`;
+      } else {
+        html += `<table>
+          <thead>
+            <tr>
+              <th>الاسم</th>
+              <th>الرمز</th>
+              <th>السعر $</th>
+              <th>التغيير (24س)</th>
+              <th>أعلى 24س</th>
+              <th>أدنى 24س</th>
+            </tr>
+          </thead>
+          <tbody>`;
 
-      filtered.forEach(c => {
-        const changeClass = c.price_change_percentage_24h >= 100 ? 'extreme' :
-                           c.price_change_percentage_24h >= 0 ? 'up' : 'down';
-        html += `<tr>
-          <td>${c.name}</td>
-          <td>${c.symbol.toUpperCase()}</td>
-          <td>${c.current_price.toFixed(4)}</td>
-          <td class="${changeClass}">${c.price_change_percentage_24h.toFixed(2)}%</td>
-          <td>${c.high_24h ? c.high_24h.toFixed(4) : 'N/A'}</td>
-          <td>${c.low_24h ? c.low_24h.toFixed(4) : 'N/A'}</td>
-        </tr>`;
-      });
-      html += `</table>`;
+        filtered.forEach(c => {
+          const changeClass = c.price_change_percentage_24h >= 100 ? 'extreme' :
+                              c.price_change_percentage_24h >= 0 ? 'up' : 'down';
+          html += `<tr>
+            <td>
+              <div class="coin-name-cell">
+                <img src="${c.image}" alt="${c.name}" class="coin-icon">
+                <span>${c.name}</span>
+              </div>
+            </td>
+            <td class="coin-symbol">${c.symbol.toUpperCase()}</td>
+            <td>${c.current_price.toFixed(4)}</td>
+            <td class="${changeClass}">${c.price_change_percentage_24h.toFixed(2)}%</td>
+            <td>${c.high_24h ? c.high_24h.toFixed(4) : 'N/A'}</td>
+            <td>${c.low_24h ? c.low_24h.toFixed(4) : 'N/A'}</td>
+          </tr>`;
+        });
+        html += `</tbody></table>`;
+      }
       document.getElementById('tracker').innerHTML = html;
     }
 
@@ -99,8 +218,9 @@
 
     document.getElementById('search').addEventListener('input', renderTable);
     document.getElementById('threshold').addEventListener('change', renderTable);
+
     fetchData();
-    setInterval(fetchData, 60000);
+    setInterval(fetchData, 60000); // تحديث كل 60 ثانية
   </script>
 </body>
 </html>
